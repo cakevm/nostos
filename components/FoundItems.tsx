@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useAccount, useReadContract } from 'wagmi'
+import { useAccount } from 'wagmi'
 import { formatEther } from 'viem'
 import { Button } from '@/components/ui/button'
 import { Search, Clock, CheckCircle, XCircle, Loader2, DollarSign, Eye, EyeOff } from 'lucide-react'

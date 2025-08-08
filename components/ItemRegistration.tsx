@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther, formatEther } from 'viem'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect } from 'wagmi'
+import { formatEther } from 'viem'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,8 +12,8 @@ import { getContractAddress } from '@/lib/chains'
 import { generateItemId, type ItemData } from '@/lib/decryption'
 import { useEncryption } from '@/lib/useEncryption'
 import { NostosContract, REGISTRATION_FEE, PLATFORM_FEE, MIN_STAKE } from '@/lib/contracts'
-import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
+import { BlockExplorerLink } from '@/lib/block-explorer'
 
 const REWARD_PRESETS = [
   { label: '0.005 ETH', value: '0.005' },   // 10x the stake
@@ -24,9 +24,10 @@ const REWARD_PRESETS = [
 
 export function ItemRegistration() {
   const { address, chain } = useAccount()
-  const router = useRouter()
+  const { connect, connectors } = useConnect()
   const { encryptItem, isSigningForEncryption } = useEncryption()
   const [mounted, setMounted] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -39,12 +40,51 @@ export function ItemRegistration() {
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    // Auto-prompt for wallet connection if not connected
+    if (!address && connectors.length > 0) {
+      // Find Porto connector first (for gas-free experience)
+      const portoConnector = connectors.find(c => c.name.toLowerCase().includes('porto'))
+      if (portoConnector) {
+        console.log('Auto-prompting Porto wallet connection for registration')
+      }
+    }
+  }, [address, connectors])
 
   const { writeContract, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
   })
+  
+  // Better error handling
+  useEffect(() => {
+    if (error) {
+      console.error('Transaction error:', error)
+      // Check if it's a real rejection or another issue
+      const errorMessage = error.message || ''
+      if (errorMessage.includes('User rejected') || errorMessage.includes('user rejected')) {
+        // This might be a false positive - check if transaction actually went through
+        console.log('Wallet reported user rejection, but check if transaction succeeded')
+        if (hash) {
+          console.log('Transaction hash exists despite error:', hash)
+        }
+      }
+    }
+  }, [error, hash])
+  
+  // Log successful transaction
+  useEffect(() => {
+    if (hash) {
+      console.log('Transaction submitted successfully! Hash:', hash)
+      console.log('View on BaseScan:', `https://sepolia.basescan.org/tx/${hash}`)
+    }
+  }, [hash])
+  
+  // Log confirmation
+  useEffect(() => {
+    if (isSuccess) {
+      console.log('Transaction confirmed! Success:', isSuccess)
+    }
+  }, [isSuccess])
 
   const handlePresetClick = (value: string) => {
     setSelectedPreset(value)
@@ -72,8 +112,8 @@ export function ItemRegistration() {
       return
     }
     
-    // Use Sepolia chain ID if chain is undefined (wallet connected but wrong network)
-    const chainId = chain?.id || 11155111 // Sepolia ID
+    // Use Base Sepolia chain ID if chain is undefined (wallet connected but wrong network)
+    const chainId = chain?.id || 84532 // Base Sepolia ID
 
     // Validate reward amount
     const rewardAmount = selectedPreset === 'custom' ? customReward : formData.reward
@@ -105,6 +145,8 @@ export function ItemRegistration() {
       const contractAddress = getContractAddress(chainId)
       
       console.log('Writing to contract:', contractAddress, 'on chain:', chainId, 'with registration fee:', REGISTRATION_FEE.toString())
+      console.log('Current chain:', chain)
+      console.log('Current address:', address)
       
       writeContract({
         address: contractAddress,
@@ -112,8 +154,8 @@ export function ItemRegistration() {
         functionName: 'registerItem',
         args: [itemId, `0x${encryptedHex}`],
         value: REGISTRATION_FEE, // Total registration fee (platform fee + stake)
-        account: address!,
-        chain: chain!,
+        account: address,
+        chain: chain,
       })
       
       // Store QR data for after transaction success
@@ -140,6 +182,11 @@ export function ItemRegistration() {
           <p className="text-slate-600 dark:text-stone-300/70">
             Your item has been registered on the blockchain. Download and print this QR code.
           </p>
+          {hash && (
+            <div className="mt-4">
+              <BlockExplorerLink hash={hash} />
+            </div>
+          )}
         </div>
         
         <QRGenerator data={qrData.url} itemName={qrData.itemName} />
@@ -256,13 +303,59 @@ export function ItemRegistration() {
 
       {mounted && !address && (
         <div className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 p-4 rounded-lg text-sm border border-amber-300 dark:border-amber-900/30">
-          Please connect your wallet using the Porto button in the header to register items.
+          <p className="mb-3">Please connect your wallet to register items.</p>
+          <Button
+            type="button"
+            onClick={async () => {
+              setIsConnecting(true)
+              try {
+                // Prefer Porto for better UX
+                const portoConnector = connectors.find(c => c.name.toLowerCase().includes('porto'))
+                if (portoConnector) {
+                  await connect({ connector: portoConnector })
+                } else if (connectors.length > 0) {
+                  await connect({ connector: connectors[0] })
+                }
+              } catch (error) {
+                console.error('Connection failed:', error)
+              } finally {
+                setIsConnecting(false)
+              }
+            }}
+            className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+            disabled={isConnecting}
+          >
+            {isConnecting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              'Connect Wallet'
+            )}
+          </Button>
+        </div>
+      )}
+
+      {hash && !isSuccess && (
+        <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 p-4 rounded-lg text-sm border border-blue-300 dark:border-blue-900/30">
+          <p className="font-semibold mb-1">Transaction Pending:</p>
+          <p>Your transaction is being processed on the blockchain.</p>
+          <div className="mt-2">
+            <BlockExplorerLink hash={hash}>Track Transaction</BlockExplorerLink>
+          </div>
         </div>
       )}
 
       {error && (
         <div className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 p-4 rounded-lg text-sm border border-red-300 dark:border-red-900/30">
-          {error.message}
+          <p className="font-semibold mb-1">Transaction Error:</p>
+          <p>{error.message?.includes('User rejected') ? 
+            'Transaction was cancelled. If you did confirm it, please check your wallet for pending transactions.' : 
+            error.message}</p>
+          {error.cause && (
+            <p className="text-xs mt-2 opacity-75">Details: {String(error.cause)}</p>
+          )}
         </div>
       )}
 

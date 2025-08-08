@@ -30,7 +30,7 @@ export function decryptItemData(encryptedData: string, key: string): ItemData {
     const decrypted = CryptoJS.AES.decrypt(encryptedData, key)
     const jsonString = decrypted.toString(CryptoJS.enc.Utf8)
     return JSON.parse(jsonString)
-  } catch (error) {
+  } catch {
     throw new Error('Failed to decrypt item data. Invalid key or corrupted data.')
   }
 }
@@ -49,7 +49,7 @@ export function decryptContactInfo(encryptedContact: string, ownerAddress: strin
   try {
     const decrypted = CryptoJS.AES.decrypt(encryptedContact, ownerAddress.toLowerCase())
     return decrypted.toString(CryptoJS.enc.Utf8)
-  } catch (error) {
+  } catch {
     throw new Error('Failed to decrypt contact info')
   }
 }

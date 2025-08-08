@@ -9,7 +9,7 @@ export default function FoundItemPage() {
   const searchParams = useSearchParams()
   
   const itemId = params.code as string
-  const encryptionKey = searchParams.get('key')
+  const _encryptionKey = searchParams.get('key')
 
   if (!itemId) {
     return (

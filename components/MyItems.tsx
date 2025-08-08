@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { useAccount, useReadContract, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useState, useEffect, useCallback } from 'react'
+import { useAccount, usePublicClient, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { formatEther } from 'viem'
 import { Button } from '@/components/ui/button'
 import { QRGenerator } from './QRGenerator'
 import { RevealContactModal } from './RevealContactModal'
-import { Package, Clock, CheckCircle, AlertCircle, Loader2, QrCode, Eye, EyeOff, Wallet, ExternalLink, Mail, Phone, MessageSquare } from 'lucide-react'
+import { Package, Clock, CheckCircle, AlertCircle, Loader2, QrCode, Eye, EyeOff, Wallet, ExternalLink, Mail, Phone, MessageSquare, Database, Trash2 } from 'lucide-react'
+import { BlockExplorerLink } from '@/lib/block-explorer'
 import { getUserItems, getUserItemsExtended, getItemClaims, getContactReveals, getItemReturns } from '@/lib/events'
-import { generateQRURL, isWalletAvailable, type ItemData as DecryptedItemData, type ContactData } from '@/lib/decryption'
+import { isWalletAvailable, type ItemData as DecryptedItemData, type ContactData } from '@/lib/decryption'
 import { useEncryption } from '@/lib/useEncryption'
 import { useDecryptionCache } from '@/lib/decryption-cache'
 import type { ItemRegisteredEvent, ClaimSubmittedEvent } from '@/lib/events'
@@ -30,7 +31,7 @@ interface EnrichedItem extends ItemRegisteredEvent {
 export function MyItems() {
   const { address, chain } = useAccount()
   const publicClient = usePublicClient()
-  const { decryptItem, decryptContact } = useEncryption()
+  const { decryptItem, decryptContact, bulkDecryptItems, clearCache } = useEncryption()
   const [items, setItems] = useState<EnrichedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
@@ -49,7 +50,7 @@ export function MyItems() {
   })
 
   // Function to fetch and decrypt claim contact info
-  const fetchClaimDetails = async (itemId: `0x${string}`, claimIndex: number): Promise<ClaimWithDetails | null> => {
+  const fetchClaimDetails = useCallback(async (itemId: `0x${string}`, claimIndex: number): Promise<ClaimWithDetails | null> => {
     if (!publicClient || !chain) return null
     
     try {
@@ -100,7 +101,50 @@ export function MyItems() {
       console.error('Error fetching claim details:', error)
       return null
     }
-  }
+  }, [publicClient, chain, decryptContact])
+
+  const decryptItemData = useCallback(async (itemId: `0x${string}`, encryptedData: `0x${string}`) => {
+    if (!address) return
+
+    // Check cache first
+    const cached = getFromCache(address, itemId)
+    if (cached) {
+      console.log('Using cached decryption for item:', itemId)
+      setItems(prev => 
+        prev.map(item => 
+          item.itemId === itemId 
+            ? { ...item, decryptedData: cached }
+            : item
+        )
+      )
+      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'cached' }))
+      return
+    }
+
+    setDecryptionStatus(prev => ({ ...prev, [itemId]: 'loading' }))
+    
+    try {
+      // Remove '0x' prefix for decryption
+      const hexData = encryptedData.slice(2)
+      const decrypted = await decryptItem(hexData, itemId)
+      
+      // Save to cache
+      saveToCache(address, itemId, decrypted)
+      
+      setItems(prev => 
+        prev.map(item => 
+          item.itemId === itemId 
+            ? { ...item, decryptedData: decrypted }
+            : item
+        )
+      )
+      
+      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'success' }))
+    } catch (error) {
+      console.error('Error decrypting item:', error)
+      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'error' }))
+    }
+  }, [address, decryptItem, getFromCache, saveToCache])
 
   // Handle confirming item return
   const handleConfirmReturn = async (itemId: `0x${string}`, claimIndex: number, finderName?: string) => {
@@ -159,10 +203,14 @@ export function MyItems() {
       }))
       setConfirmingReturn(null)
       
-      // Show success message
-      alert('Item marked as returned! The reward has been sent to the finder.')
+      // Show success message with transaction link
+      const message = 'Item marked as returned! The reward has been sent to the finder.'
+      if (confirmReturnHash) {
+        console.log('Return confirmed! Transaction:', `https://sepolia.basescan.org/tx/${confirmReturnHash}`)
+      }
+      alert(message)
     }
-  }, [isReturnConfirmed, confirmingReturn])
+  }, [isReturnConfirmed, confirmingReturn, confirmReturnHash])
 
   // Clear cache when user changes
   useEffect(() => {
@@ -179,6 +227,57 @@ export function MyItems() {
       if (!address || !chain) {
         setLoading(false)
         return
+      }
+
+      // Move fetchClaimDetails inside to avoid dependency issues
+      const fetchClaimDetailsLocal = async (itemId: `0x${string}`, claimIndex: number): Promise<ClaimWithDetails | null> => {
+        if (!publicClient || !chain) return null
+        
+        try {
+          const contractAddress = getContractAddress(chain.id)
+          const result = await publicClient.readContract({
+            address: contractAddress,
+            abi: NostosContract.abi,
+            functionName: 'getClaim',
+            args: [itemId, BigInt(claimIndex)],
+          }) as any
+          
+          const finderAddress = result[0] as `0x${string}`
+          const status = result[1] as ClaimStatus
+          const encryptedContact = result[5] as `0x${string}`
+          
+          let contactInfo: ContactData | undefined
+          
+          if (status === ClaimStatus.ContactRevealed && encryptedContact) {
+            try {
+              const encryptedHex = encryptedContact.slice(2)
+              contactInfo = await decryptContact(encryptedHex, finderAddress, itemId)
+              console.log('Decrypted contact info:', contactInfo)
+            } catch (err) {
+              console.error('Error decrypting contact:', err)
+              try {
+                const contactBytes = encryptedContact.slice(2)
+                const contactString = Buffer.from(contactBytes, 'hex').toString('utf8')
+                contactInfo = JSON.parse(contactString) as ContactData
+              } catch (fallbackErr) {
+                console.error('Fallback decryption also failed:', fallbackErr)
+              }
+            }
+          }
+          
+          return {
+            finder: finderAddress,
+            itemId,
+            claimIndex: BigInt(claimIndex),
+            timestamp: result[2],
+            status,
+            encryptedContact,
+            contactInfo
+          }
+        } catch (error) {
+          console.error('Error fetching claim details:', error)
+          return null
+        }
       }
 
       try {
@@ -213,7 +312,7 @@ export function MyItems() {
             // Fetch detailed claim info for revealed claims
             const detailedClaims: ClaimWithDetails[] = []
             for (const claim of claims) {
-              const details = await fetchClaimDetails(item.itemId, Number(claim.claimIndex))
+              const details = await fetchClaimDetailsLocal(item.itemId, Number(claim.claimIndex))
               if (details) {
                 detailedClaims.push({
                   ...claim,
@@ -248,22 +347,60 @@ export function MyItems() {
 
         // Attempt to decrypt item data if wallet is available
         if (isWalletAvailable()) {
+          // Separate cached and non-cached items
+          const itemsToDecrypt: Array<{ itemId: `0x${string}`, encryptedData: string }> = []
+          const cachedItems: Array<{ itemId: `0x${string}`, data: any }> = []
+          
           for (const item of enrichedItems) {
-            // Check cache first to avoid unnecessary signature requests
             const cached = getFromCache(address, item.itemId)
             if (cached) {
-              // Update item with cached data immediately
-              const itemIndex = enrichedItems.findIndex(i => i.itemId === item.itemId)
-              if (itemIndex !== -1) {
-                enrichedItems[itemIndex].decryptedData = cached
-                setDecryptionStatus(prev => ({ ...prev, [item.itemId]: 'cached' }))
-              }
-            } else {
-              // Decrypt items not in cache
-              decryptItemData(item.itemId, item.encryptedData)
+              cachedItems.push({ itemId: item.itemId, data: cached })
+              setDecryptionStatus(prev => ({ ...prev, [item.itemId]: 'cached' }))
+            } else if (item.encryptedData && item.encryptedData !== '0x') {
+              itemsToDecrypt.push({
+                itemId: item.itemId,
+                encryptedData: item.encryptedData.slice(2) // Remove 0x prefix
+              })
             }
           }
-          // Update items with cached data
+          
+          // Apply cached data immediately
+          cachedItems.forEach(({ itemId, data }) => {
+            const itemIndex = enrichedItems.findIndex(i => i.itemId === itemId)
+            if (itemIndex !== -1) {
+              enrichedItems[itemIndex].decryptedData = data
+            }
+          })
+          
+          // Bulk decrypt non-cached items with single signature
+          if (itemsToDecrypt.length > 0) {
+            console.log(`Dashboard: Bulk decrypting ${itemsToDecrypt.length} items with single signature...`)
+            try {
+              const decryptedMap = await bulkDecryptItems(itemsToDecrypt)
+              
+              // Apply decrypted data and cache it
+              decryptedMap.forEach((decryptedData, itemId) => {
+                if (decryptedData) {
+                  const itemIndex = enrichedItems.findIndex(i => i.itemId === itemId)
+                  if (itemIndex !== -1) {
+                    enrichedItems[itemIndex].decryptedData = decryptedData
+                    saveToCache(address, itemId, decryptedData)
+                    setDecryptionStatus(prev => ({ ...prev, [itemId]: 'success' }))
+                  }
+                } else {
+                  setDecryptionStatus(prev => ({ ...prev, [itemId]: 'error' }))
+                }
+              })
+            } catch (error) {
+              console.error('Bulk decryption failed:', error)
+              // Don't fall back to individual decryption to avoid infinite loop
+              itemsToDecrypt.forEach(({ itemId }) => {
+                setDecryptionStatus(prev => ({ ...prev, [itemId]: 'error' }))
+              })
+            }
+          }
+          
+          // Update items with all data
           setItems([...enrichedItems])
         }
 
@@ -276,7 +413,8 @@ export function MyItems() {
     }
 
     fetchUserItems()
-  }, [address, chain])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, chain?.id]) // Only re-run when user or chain changes, not when functions change to avoid infinite loop
 
   const loadMoreItems = async () => {
     if (!address || !chain || isLoadingMore) return
@@ -335,49 +473,6 @@ export function MyItems() {
       console.error('Error loading more items:', error)
     } finally {
       setIsLoadingMore(false)
-    }
-  }
-
-  const decryptItemData = async (itemId: `0x${string}`, encryptedData: `0x${string}`) => {
-    if (!address) return
-
-    // Check cache first
-    const cached = getFromCache(address, itemId)
-    if (cached) {
-      console.log('Using cached decryption for item:', itemId)
-      setItems(prev => 
-        prev.map(item => 
-          item.itemId === itemId 
-            ? { ...item, decryptedData: cached }
-            : item
-        )
-      )
-      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'cached' }))
-      return
-    }
-
-    setDecryptionStatus(prev => ({ ...prev, [itemId]: 'loading' }))
-    
-    try {
-      // Remove '0x' prefix for decryption
-      const hexData = encryptedData.slice(2)
-      const decrypted = await decryptItem(hexData, itemId)
-      
-      // Save to cache
-      saveToCache(address, itemId, decrypted)
-      
-      setItems(prev => 
-        prev.map(item => 
-          item.itemId === itemId 
-            ? { ...item, decryptedData: decrypted }
-            : item
-        )
-      )
-      
-      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'success' }))
-    } catch (error) {
-      console.error('Error decrypting item:', error)
-      setDecryptionStatus(prev => ({ ...prev, [itemId]: 'error' }))
     }
   }
 
@@ -452,6 +547,19 @@ export function MyItems() {
 
   return (
     <div className="space-y-4">
+      {/* Show pending transaction status */}
+      {confirmReturnHash && !isReturnConfirmed && (
+        <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 p-4 rounded-lg border border-blue-300 dark:border-blue-900/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">Transaction Pending</p>
+              <p className="text-sm mt-1">Confirming item return on the blockchain...</p>
+            </div>
+            <BlockExplorerLink hash={confirmReturnHash}>View Transaction</BlockExplorerLink>
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-800 dark:text-stone-200">
           My Registered Items
@@ -462,6 +570,29 @@ export function MyItems() {
             <span className="text-xs text-slate-500 dark:text-stone-500 ml-2">
               (last 10k blocks)
             </span>
+          </div>
+          
+          {/* Cache indicator and clear button */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800/30">
+            <Database className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-700 dark:text-green-400">
+              Signatures cached (24h)
+            </span>
+            <button
+              onClick={() => {
+                clearCache()
+                // Force re-decrypt all items
+                items.forEach(item => {
+                  if (item.encryptedData && item.encryptedData !== '0x') {
+                    decryptItemData(item.itemId, item.encryptedData)
+                  }
+                })
+              }}
+              className="ml-1 p-1 hover:bg-green-100 dark:hover:bg-green-900/50 rounded transition-colors"
+              title="Clear cache and re-sign"
+            >
+              <Trash2 className="h-3 w-3 text-green-600 dark:text-green-400" />
+            </button>
           </div>
           {!hasTriedExtended && (
             <Button
@@ -638,7 +769,7 @@ export function MyItems() {
                   </div>
                   
                   <div className="space-y-3">
-                    {item.claims.map((claim, index) => (
+                    {item.claims.map((claim, _index) => (
                       <div key={`${claim.itemId}-${claim.claimIndex}`} className="bg-white dark:bg-stone-800 rounded p-3 border">
                         <div className="flex justify-between items-start mb-2">
                           <div>

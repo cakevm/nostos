@@ -1,8 +1,9 @@
 "use client"
 
 import { useSignMessage, useAccount } from 'wagmi'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { ItemData, ContactData } from './decryption'
+import { SignatureCache, BulkSignatureGenerator } from './signature-cache'
 
 /**
  * Custom hook for encryption operations using wallet signatures
@@ -12,23 +13,45 @@ export function useEncryption() {
   const { signMessageAsync } = useSignMessage()
   const { address } = useAccount()
   const [isSigningForEncryption, setIsSigningForEncryption] = useState(false)
+  
+  // Clear cache when user changes
+  useEffect(() => {
+    if (!address) {
+      SignatureCache.clearAll()
+    }
+  }, [address])
 
   /**
    * Derive encryption key using wallet signature
    */
   const deriveKey = useCallback(async (
     itemId: `0x${string}`,
-    purpose: 'item' | 'contact' = 'item'
+    purpose: 'item' | 'contact' = 'item',
+    skipCache: boolean = false
   ): Promise<string> => {
+    // Check cache first (unless explicitly skipped)
+    if (!skipCache && address) {
+      const cached = SignatureCache.get(address, itemId, purpose)
+      if (cached) {
+        console.log(`Using cached signature for ${purpose} ${itemId}`)
+        return cached.slice(2, 66) // Take first 64 hex chars (32 bytes)
+      }
+    }
+    
     const message = `Nostos ${purpose} decryption key for ${itemId}`
     
     try {
       setIsSigningForEncryption(true)
       // Use wagmi's signMessageAsync which handles both MetaMask and Porto properly
       const signature = await signMessageAsync({ 
-      account: address!,
-      message 
-    })
+        account: address!,
+        message 
+      })
+      
+      // Cache the signature
+      if (address) {
+        SignatureCache.set(address, itemId, purpose, signature)
+      }
       
       // Use the signature as encryption key (deterministic)
       return signature.slice(2, 66) // Take first 64 hex chars (32 bytes)
@@ -38,7 +61,7 @@ export function useEncryption() {
     } finally {
       setIsSigningForEncryption(false)
     }
-  }, [signMessageAsync])
+  }, [signMessageAsync, address])
 
   /**
    * Encrypt item data
@@ -193,13 +216,71 @@ export function useEncryption() {
 
     const decryptedString = new TextDecoder().decode(decryptedBuffer)
     return JSON.parse(decryptedString) as ContactData
-  }, [signMessageAsync])
+  }, [signMessageAsync, address])
+
+  /**
+   * Bulk decrypt multiple items with a single signature
+   */
+  const bulkDecryptItems = useCallback(async (
+    items: Array<{ itemId: `0x${string}`, encryptedData: string }>
+  ): Promise<Map<string, ItemData | null>> => {
+    if (!address) throw new Error('No wallet connected')
+    
+    const results = new Map<string, ItemData | null>()
+    
+    // Check which items need signatures
+    const itemsNeedingSignature: string[] = []
+    items.forEach(({ itemId }) => {
+      if (!SignatureCache.get(address, itemId, 'item')) {
+        itemsNeedingSignature.push(itemId)
+      }
+    })
+    
+    // If we need signatures, get them in bulk
+    if (itemsNeedingSignature.length > 0) {
+      try {
+        setIsSigningForEncryption(true)
+        await BulkSignatureGenerator.generateMasterSignature(
+          signMessageAsync,
+          address,
+          itemsNeedingSignature
+        )
+      } finally {
+        setIsSigningForEncryption(false)
+      }
+    }
+    
+    // Now decrypt all items using cached signatures
+    for (const { itemId, encryptedData } of items) {
+      try {
+        const decrypted = await decryptItem(encryptedData, itemId)
+        results.set(itemId, decrypted)
+      } catch (error) {
+        console.error(`Failed to decrypt item ${itemId}:`, error)
+        results.set(itemId, null)
+      }
+    }
+    
+    return results
+  }, [address, signMessageAsync, decryptItem])
+
+  /**
+   * Clear signature cache for current user
+   */
+  const clearCache = useCallback(() => {
+    if (address) {
+      SignatureCache.clearForAddress(address)
+    }
+  }, [address])
 
   return {
     encryptItem,
     decryptItem,
     encryptContact,
     decryptContact,
-    isSigningForEncryption
+    bulkDecryptItems,
+    clearCache,
+    isSigningForEncryption,
+    cacheStats: SignatureCache.getStats()
   }
 }

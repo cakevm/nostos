@@ -35,7 +35,7 @@ export function QRScanner({ onClose }: QRScannerProps) {
       } else {
         setError('This QR code is not a valid Nostos item')
       }
-    } catch (err) {
+    } catch {
       // Not a valid URL
       setError('Invalid QR code format')
     }

@@ -1,4 +1,4 @@
-import { createPublicClient, http, type Address, type PublicClient } from 'viem'
+import { createPublicClient, http, type Address } from 'viem'
 import { NostosContract, ItemStatus, ClaimStatus } from './contracts'
 import { getChainConfig } from './chains'
 
@@ -242,7 +242,7 @@ export class NostosDataProvider {
   }
 
   // Get all active items (for browsing)
-  async getAllActiveItems(limit: number = 100): Promise<Array<{ itemId: `0x${string}`, item: Item }>> {
+  async getAllActiveItems(_limit: number = 100): Promise<Array<{ itemId: `0x${string}`, item: Item }>> {
     // Since we can't iterate all items directly, we'd need to use events for initial discovery
     // This is a placeholder that would need event-based discovery for production
     // For now, returning empty array as this would require indexing

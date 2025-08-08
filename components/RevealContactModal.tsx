@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { getContractAddress } from '@/lib/chains'
 import { NostosContract } from '@/lib/contracts'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { BlockExplorerLink } from '@/lib/block-explorer'
 
 interface RevealContactModalProps {
   itemId: `0x${string}`
@@ -20,7 +21,6 @@ interface RevealContactModalProps {
 export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: RevealContactModalProps) {
   const { address, chain } = useAccount()
   const [rewardAmount, setRewardAmount] = useState('0.01')
-  const [isRevealing, setIsRevealing] = useState(false)
   
   const { writeContract, data: hash, error, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
@@ -37,8 +37,6 @@ export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: R
       alert('Please enter a valid reward amount')
       return
     }
-
-    setIsRevealing(true)
 
     try {
       const contractAddress = getContractAddress(chain.id)
@@ -57,7 +55,6 @@ export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: R
       })
     } catch (err) {
       console.error('Error revealing contact:', err)
-      setIsRevealing(false)
     }
   }
 
@@ -71,6 +68,11 @@ export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: R
             <p className="text-sm text-slate-600 dark:text-stone-400 mb-4">
               The finder's contact information is now available. The reward has been escrowed and will be paid when you confirm the item return.
             </p>
+            {hash && (
+              <div className="mb-4">
+                <BlockExplorerLink hash={hash} />
+              </div>
+            )}
             <Button onClick={() => { onSuccess?.(); onClose(); }}>
               Close
             </Button>
@@ -102,6 +104,16 @@ export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: R
               This amount will be escrowed and paid to the finder upon successful return
             </p>
           </div>
+
+          {hash && !isSuccess && (
+            <div className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 p-3 rounded text-sm">
+              <p className="font-semibold mb-1">Transaction Pending:</p>
+              <p>Your transaction is being processed.</p>
+              <div className="mt-2">
+                <BlockExplorerLink hash={hash}>Track Transaction</BlockExplorerLink>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 p-3 rounded text-sm flex items-start gap-2">

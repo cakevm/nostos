@@ -1,17 +1,18 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useConnect } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { getContractAddress, sepolia, baseSepolia } from '@/lib/chains'
-import { decryptItemData, parseQRURL, type ItemData, type ContactData } from '@/lib/decryption'
+import { parseQRURL, type ItemData, type ContactData } from '@/lib/decryption'
 import { useEncryption } from '@/lib/useEncryption'
 import { NostosContract, ItemStatus } from '@/lib/contracts'
 import { NostosDataProvider, type Item } from '@/lib/contract-data'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2, CheckCircle, Wallet } from 'lucide-react'
+import { BlockExplorerLink } from '@/lib/block-explorer'
 
 interface ClaimFormProps {
   itemId: string
@@ -20,7 +21,9 @@ interface ClaimFormProps {
 
 export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
   const { address, chain } = useAccount()
+  const { connect, connectors } = useConnect()
   const { encryptContact, isSigningForEncryption } = useEncryption()
+  const [isConnecting, setIsConnecting] = useState(false)
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -34,6 +37,17 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [itemNotFound, setItemNotFound] = useState(false)
   
+  // Auto-prompt for wallet connection when finder lands on page
+  useEffect(() => {
+    if (!address && connectors.length > 0) {
+      // Find Porto connector for gas-free claiming
+      const portoConnector = connectors.find(c => c.name.toLowerCase().includes('porto'))
+      if (portoConnector) {
+        console.log('Porto wallet available for gas-free claiming')
+      }
+    }
+  }, [address, connectors])
+
   // Fetch item data using the data provider
   useEffect(() => {
     async function fetchItem() {
@@ -238,7 +252,12 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
         <p className="text-amber-100/70 mb-4">
           Your claim has been submitted! The owner will pay to reveal your contact information and reach out to arrange the return.
         </p>
-        <p className="text-sm text-amber-100/60">
+        {hash && (
+          <div className="mt-4">
+            <BlockExplorerLink hash={hash} />
+          </div>
+        )}
+        <p className="text-sm text-amber-100/60 mt-4">
           Thank you for being an honest finder!
         </p>
       </div>
@@ -323,6 +342,16 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
           </p>
         </div>
 
+        {hash && !isSuccess && (
+          <div className="bg-blue-950/30 text-blue-400 p-4 rounded-lg text-sm border border-blue-900/30">
+            <p className="font-semibold mb-1">Transaction Pending:</p>
+            <p>Your claim is being processed on the blockchain.</p>
+            <div className="mt-2">
+              <BlockExplorerLink hash={hash}>Track Transaction</BlockExplorerLink>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-950/30 text-red-400 p-4 rounded-lg text-sm border border-red-900/30">
             {error.message}
@@ -350,10 +379,43 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
         </Button>
 
         {!address && (
-          <div className="bg-amber-950/30 border border-amber-900/30 rounded-lg p-4 text-center">
-            <p className="text-sm text-amber-100/80">
-              💵 Connect your wallet to submit a claim. Small gas fee required.
+          <div className="bg-gradient-to-r from-green-950/30 to-emerald-950/30 border border-green-900/30 rounded-lg p-4">
+            <p className="text-sm text-green-100/80 mb-3">
+              ✨ Connect with Porto for <strong>FREE</strong> claiming (no gas fees needed!) or use any wallet.
             </p>
+            <Button
+              type="button"
+              onClick={async () => {
+                setIsConnecting(true)
+                try {
+                  // Prefer Porto for gas-free claiming
+                  const portoConnector = connectors.find(c => c.name.toLowerCase().includes('porto'))
+                  if (portoConnector) {
+                    await connect({ connector: portoConnector })
+                  } else if (connectors.length > 0) {
+                    await connect({ connector: connectors[0] })
+                  }
+                } catch (error) {
+                  console.error('Connection failed:', error)
+                } finally {
+                  setIsConnecting(false)
+                }
+              }}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Connect Wallet to Claim
+                </>
+              )}
+            </Button>
           </div>
         )}
       </form>

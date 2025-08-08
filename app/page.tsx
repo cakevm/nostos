@@ -1,11 +1,18 @@
+"use client"
+
 import Link from 'next/link'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Navigation } from '@/components/Navigation'
 import { BoatAnimation } from '@/components/BoatAnimation'
-import { Shield, QrCode, Search, Gift, Lock, Zap } from 'lucide-react'
+import { Presentation } from '@/components/Presentation'
+import { Shield, QrCode, Search, Gift, Lock, Zap, Play } from 'lucide-react'
 
 export default function Home() {
+  const [showPresentation, setShowPresentation] = useState(false)
+
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-b from-stone-50 via-stone-100 to-stone-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <Navigation showRegisterButton />
 
@@ -31,6 +38,15 @@ export default function Home() {
                 Found Something?
               </Button>
             </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="font-semibold border-amber-600 dark:border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+              onClick={() => setShowPresentation(true)}
+            >
+              <Play className="mr-2 h-5 w-5" />
+              View Presentation
+            </Button>
           </div>
         </div>
       </section>
@@ -189,5 +205,10 @@ export default function Home() {
         </div>
       </footer>
     </div>
+    
+    {showPresentation && (
+      <Presentation onClose={() => setShowPresentation(false)} />
+    )}
+    </>
   )
 }

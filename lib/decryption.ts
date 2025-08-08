@@ -304,7 +304,7 @@ export function parseQRURL(url: string): { itemId: `0x${string}`, encryptionKey:
       itemId: `0x${itemIdHex}` as `0x${string}`,
       encryptionKey
     }
-  } catch (error) {
+  } catch {
     return null
   }
 }

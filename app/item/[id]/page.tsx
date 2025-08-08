@@ -6,18 +6,17 @@ import { PortoAuth } from '@/components/PortoAuth'
 import { NostosContract } from '@/lib/contracts'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Package, User, Clock, CheckCircle, XCircle, Download, QrCode } from 'lucide-react'
+import { ArrowLeft, Package, Clock, CheckCircle, XCircle, QrCode } from 'lucide-react'
+import { BlockExplorerLink } from '@/lib/block-explorer'
 import { formatEther } from 'viem'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import QRCode from 'qrcode'
-import { decryptContactInfo } from '@/lib/encryption'
 import { formatDateTime } from '@/lib/format'
 
 export default function ItemDetailPage() {
   const params = useParams()
   const itemId = params.id as string
   const { address, chain } = useAccount()
-  const [selectedClaim, setSelectedClaim] = useState<number | null>(null)
   const qrRef = useRef<HTMLCanvasElement>(null)
 
   // Read item data
@@ -37,10 +36,10 @@ export default function ItemDetailPage() {
   }) as { data: readonly [`0x${string}`, `0x${string}`, number, bigint][] | undefined; refetch: () => void }
 
   // Contract write hooks
-  const { writeContract: approveClaim, data: approveHash } = useWriteContract()
-  const { writeContract: rejectClaim, data: rejectHash } = useWriteContract()
-  const { isLoading: isApproving } = useWaitForTransactionReceipt({ hash: approveHash })
-  const { isLoading: isRejecting } = useWaitForTransactionReceipt({ hash: rejectHash })
+  const { writeContract: approveClaim, data: approveHash, error: approveError } = useWriteContract()
+  const { writeContract: rejectClaim, data: rejectHash, error: rejectError } = useWriteContract()
+  const { isLoading: isApproving, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({ hash: approveHash })
+  const { isLoading: isRejecting, isSuccess: isRejectSuccess } = useWaitForTransactionReceipt({ hash: rejectHash })
 
   const handleApprove = async (claimIndex: number) => {
     if (!chain) return
@@ -104,7 +103,7 @@ export default function ItemDetailPage() {
     )
   }
 
-  const [owner, rewardAmount, registrationTime, encryptedDetails, isActive] = item
+  const [owner, rewardAmount, registrationTime, _encryptedDetails, isActive] = item
   const isOwner = address && address.toLowerCase() === owner.toLowerCase()
   const pendingClaims = claims ? claims.filter((c) => c[2] === 0) : []
   const approvedClaims = claims ? claims.filter((c) => c[2] === 1) : []
@@ -133,6 +132,54 @@ export default function ItemDetailPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Link>
+
+        {/* Transaction Status */}
+        {(approveHash || rejectHash) && (!isApproveSuccess && !isRejectSuccess) && (
+          <div className="mb-6 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 p-4 rounded-lg border border-blue-300 dark:border-blue-900/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold">Transaction Pending</p>
+                <p className="text-sm mt-1">
+                  {approveHash ? 'Approving claim...' : 'Rejecting claim...'}
+                </p>
+              </div>
+              <BlockExplorerLink hash={approveHash || rejectHash || ''}>View Transaction</BlockExplorerLink>
+            </div>
+          </div>
+        )}
+
+        {/* Success Messages */}
+        {isApproveSuccess && (
+          <div className="mb-6 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 p-4 rounded-lg border border-green-300 dark:border-green-900/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold">Claim Approved!</p>
+                <p className="text-sm mt-1">The claim has been successfully approved.</p>
+              </div>
+              {approveHash && <BlockExplorerLink hash={approveHash} />}
+            </div>
+          </div>
+        )}
+
+        {isRejectSuccess && (
+          <div className="mb-6 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 p-4 rounded-lg border border-red-300 dark:border-red-900/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold">Claim Rejected</p>
+                <p className="text-sm mt-1">The claim has been rejected.</p>
+              </div>
+              {rejectHash && <BlockExplorerLink hash={rejectHash} />}
+            </div>
+          </div>
+        )}
+
+        {/* Error Messages */}
+        {(approveError || rejectError) && (
+          <div className="mb-6 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 p-4 rounded-lg border border-red-300 dark:border-red-900/30">
+            <p className="font-semibold">Transaction Error</p>
+            <p className="text-sm mt-1">{(approveError || rejectError)?.message}</p>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Item Details */}
@@ -289,12 +336,12 @@ export default function ItemDetailPage() {
 
 function ClaimCard({ 
   claim, 
-  index, 
+  _index, 
   onApprove, 
   onReject, 
   isApproving, 
   isRejecting,
-  ownerPrivateKey 
+  _ownerPrivateKey 
 }: any) {
   const [decryptedContact, setDecryptedContact] = useState<string | null>(null)
   const [isDecrypting, setIsDecrypting] = useState(false)
@@ -304,8 +351,8 @@ function ClaimCard({
     try {
       // In production, this would use the actual owner's private key
       // For now, we'll show the encrypted data
-      const contactHex = claim[3] as string
-      // const decrypted = decryptContactInfo(contactHex.slice(2), ownerPrivateKey)
+      const _contactHex = claim[3] as string
+      // const decrypted = decryptContactInfo(_contactHex.slice(2), _ownerPrivateKey)
       // setDecryptedContact(decrypted)
       setDecryptedContact("Contact info would be decrypted here with owner's private key")
     } catch (error) {

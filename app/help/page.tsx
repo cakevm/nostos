@@ -10,39 +10,34 @@ export default function HelpPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-amber-50 dark:from-slate-900 dark:to-stone-900">
       <Navigation />
       <div className="container mx-auto px-6 py-12">
-        {/* Header */}
+        {/* Header with Greek Mythology */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-amber-700 dark:from-amber-300 dark:to-amber-400 bg-clip-text text-transparent">
             How Nostos Works
           </h1>
+          
+          {/* Greek Mythology Section */}
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-xl p-6 mb-8 max-w-4xl mx-auto border border-amber-200 dark:border-amber-800/30">
+            <h2 className="text-2xl font-bold mb-4 text-amber-800 dark:text-amber-300">
+              🏛️ The Meaning of Nostos
+            </h2>
+            <p className="text-slate-700 dark:text-stone-300 mb-3 text-left max-w-3xl mx-auto">
+              In ancient Greek literature, <strong className="text-amber-700 dark:text-amber-400">νόστος (nostos)</strong> refers to the epic journey of returning home after a long absence. 
+              The most famous nostos is Homer&apos;s <em>Odyssey</em>, where Odysseus struggles for ten years to return to Ithaca after the Trojan War.
+            </p>
+            <p className="text-slate-700 dark:text-stone-300 text-left max-w-3xl mx-auto">
+              Just as Greek heroes faced trials on their journey home, every lost item deserves its own nostos - 
+              its journey back to where it belongs. Our platform creates a bridge between those who lose and those who find, 
+              ensuring that every item can complete its odyssey home through the immutable pathways of the blockchain.
+            </p>
+            <div className="mt-4 text-sm text-amber-600 dark:text-amber-400 italic">
+              &quot;There is nothing sweeter than one&apos;s native land&quot; - Homer, The Odyssey
+            </div>
+          </div>
+          
           <p className="text-xl text-slate-600 dark:text-stone-400 max-w-3xl mx-auto mb-8">
             Blockchain-powered lost & found system with private rewards and pay-on-claim model
           </p>
-          
-          {/* Porto Sponsoring Banner */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-6 border border-blue-200 dark:border-blue-800/30 max-w-4xl mx-auto">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-stone-200">
-                Powered by Porto Sponsoring
-              </h2>
-            </div>
-            <div className="text-center">
-              <p className="text-lg text-slate-700 dark:text-stone-300 mb-4">
-                <strong>This use case is made possible thanks to Porto&apos;s transaction sponsoring.</strong>
-              </p>
-              <p className="text-slate-600 dark:text-stone-400 max-w-2xl mx-auto">
-                Finders don&apos;t need to own crypto or understand blockchain technology. 
-                Porto sponsors the gas fees, making it as easy as scanning a QR code and filling out a form.
-                No wallet setup, no ETH required, no crypto knowledge needed.
-              </p>
-              <div className="mt-4 inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-medium">
-                ✨ Zero-friction experience for everyday users
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Process Flow */}
@@ -177,7 +172,7 @@ export default function HelpPage() {
                     Connect wallet & provide your contact info. Gets encrypted.
                   </p>
                   <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                    ✨ Porto sponsors the gas fees - no ETH needed
+                    Simple one-click connection available
                   </div>
                 </div>
 
@@ -201,6 +196,130 @@ export default function HelpPage() {
                   </p>
                   <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                     Reward sent to your wallet instantly
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* With vs Without Porto Comparison */}
+          <div className="mt-16 mb-16">
+            <h2 className="text-3xl font-bold text-center mb-8 text-slate-800 dark:text-stone-200">
+              Experience Comparison: With vs Without Porto
+            </h2>
+            <div className="bg-white dark:bg-stone-900 rounded-2xl shadow-lg border border-slate-200 dark:border-stone-800 overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                {/* With Porto Column */}
+                <div className="p-8 border-r border-slate-200 dark:border-stone-800">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full text-sm font-medium mb-4">
+                      ✨ With Porto (Recommended)
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-stone-200">Zero-Friction Experience</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">No Wallet Setup</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">One-click connection with passkey authentication</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">No ETH Required</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Porto sponsors all gas fees for finders</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Instant Access</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Start claiming in seconds, no downloads needed</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">User-Friendly</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">No crypto knowledge required at all</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Secure</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Passkey-based authentication, no seed phrases</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                    <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
+                      Perfect for everyday users who find lost items
+                    </p>
+                  </div>
+                </div>
+
+                {/* Without Porto Column */}
+                <div className="p-8">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-800/30 text-slate-800 dark:text-slate-400 rounded-full text-sm font-medium mb-4">
+                      Without Porto (Traditional)
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-stone-200">Standard Crypto Experience</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <span className="text-orange-500 text-xs">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Install Wallet</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Download MetaMask or other wallet extension</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <span className="text-orange-500 text-xs">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Buy ETH</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Purchase ETH from exchange to pay gas fees</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <span className="text-orange-500 text-xs">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Complex Setup</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Save seed phrase, understand gas, manage keys</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <span className="text-orange-500 text-xs">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Learning Curve</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Need to understand blockchain basics</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                        <span className="text-orange-500 text-xs">!</span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800 dark:text-stone-200">Pay Gas Fees</p>
+                        <p className="text-sm text-slate-600 dark:text-stone-400">Each transaction costs ETH in gas fees</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-lg">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium text-center">
+                      Requires crypto experience and ETH holdings
+                    </p>
                   </div>
                 </div>
               </div>

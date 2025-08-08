@@ -12,7 +12,7 @@ export function PortoAuth() {
     address: address,
   })
   const { connect, isPending, error } = useConnect()
-  const { disconnect, disconnectAsync } = useDisconnect()
+  const { disconnectAsync } = useDisconnect()
   const connectors = useConnectors()
   const [mounted, setMounted] = useState(false)
   const [showWalletOptions, setShowWalletOptions] = useState(false)
@@ -62,7 +62,7 @@ export function PortoAuth() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (_e: MouseEvent) => {
       if (showWalletOptions) {
         setShowWalletOptions(false)
       }

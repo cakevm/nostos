@@ -69,6 +69,42 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast
 - **Base Sepolia**: `0xBC3E1381b9f3Ef13E937481DCF9d6ed802dF2BB2`
 - **Mainnet**: Not yet deployed
 
+## 💰 Gas-Free Transactions with Porto
+
+Nostos supports **gas-free transactions** for users with no crypto experience! Finders can return lost items without needing any ETH or crypto knowledge.
+
+### How It Works
+
+1. **Zero Crypto Knowledge Required**: Users don't need wallets, seed phrases, or ETH
+2. **Instant Onboarding**: Porto creates wallets with passkey/email authentication
+3. **Sponsored Transactions**: Your merchant account pays all gas fees
+4. **Seamless Experience**: Works like any traditional web app
+
+### Setting Up Porto Sponsoring
+
+```bash
+# Run the setup script
+./setup-porto-sponsor.sh
+
+# Or manually:
+# 1. Create merchant account
+pnpx porto onboard -a
+
+# 2. Add to .env.local
+MERCHANT_ADDRESS=0x...
+MERCHANT_PRIVATE_KEY=0x...
+
+# 3. Fund merchant account with ETH (testnet faucets available)
+```
+
+### What Gets Sponsored
+
+- ✅ `submitClaim` - Finders can claim items for FREE
+- ✅ `revealContactInfo` - Owners can reveal contact info
+- ✅ `confirmReturn` - Confirming successful returns
+
+When configured, the app automatically sponsors these transactions, making it completely free for good samaritans to return lost items!
+
 ## 🏗️ Project Structure
 
 ```

@@ -37,7 +37,10 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }} || true
+          # Override the .vercel/.env.production.local if it exists
+          echo "NEXT_PUBLIC_PORTO_APP_ID=${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" > .vercel/.env.production.local
 
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
@@ -80,7 +83,10 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: |
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }} || true
+          # Override the .vercel/.env.preview.local if it exists
+          echo "NEXT_PUBLIC_PORTO_APP_ID=${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" > .vercel/.env.preview.local
 
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}

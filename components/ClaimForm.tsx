@@ -40,9 +40,8 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
       setIsLoading(true)
       setItemNotFound(false)
       
-      // Use Sepolia by default if no chain is connected
-      // Also use Sepolia if connected to Base Sepolia (Porto compatibility)
-      const chainId = chain?.id === baseSepolia.id ? sepolia.id : (chain?.id || sepolia.id)
+      // Use the current chain if connected, otherwise default to Sepolia
+      const chainId = chain?.id || sepolia.id
       
       // Ensure itemId has 0x prefix
       const formattedItemId = itemId.startsWith('0x') ? itemId : `0x${itemId}`
@@ -51,19 +50,35 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
       console.log('Original Chain ID:', chain?.id, 'Using Chain ID:', chainId)
       
       try {
+        // Try current chain first
         const contractAddress = getContractAddress(chainId)
         console.log('Contract address:', contractAddress)
         const provider = new NostosDataProvider(chainId)
-        const itemData = await provider.getItem(formattedItemId as `0x${string}`)
+        let itemData = await provider.getItem(formattedItemId as `0x${string}`)
         
-        console.log('Fetched item data:', itemData)
+        console.log('Fetched item data on chain', chainId, ':', itemData)
+        
+        // If not found on current chain, try the other chain
+        if (!itemData || itemData.owner === '0x0000000000000000000000000000000000000000') {
+          const alternateChainId = chainId === sepolia.id ? baseSepolia.id : sepolia.id
+          console.log('Item not found on chain', chainId, ', trying chain', alternateChainId)
+          
+          const altProvider = new NostosDataProvider(alternateChainId)
+          itemData = await altProvider.getItem(formattedItemId as `0x${string}`)
+          
+          if (itemData && itemData.owner !== '0x0000000000000000000000000000000000000000') {
+            console.log('Item found on alternate chain', alternateChainId)
+            // Alert user they need to switch chains
+            alert(`This item was registered on ${alternateChainId === sepolia.id ? 'Sepolia' : 'Base Sepolia'}. Please switch your wallet to the correct network.`)
+          }
+        }
         
         if (itemData && itemData.owner !== '0x0000000000000000000000000000000000000000') {
           setItem(itemData)
           setItemOwner(itemData.owner)
           console.log('Item found with owner:', itemData.owner)
         } else {
-          console.log('Item not found or has no owner')
+          console.log('Item not found on any chain')
           setItemNotFound(true)
         }
       } catch (error) {

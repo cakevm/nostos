@@ -1,12 +1,16 @@
 "use client"
 
-import { useAccount, useConnect, useDisconnect, useConnectors } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useConnectors, useBalance } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { Loader2, Wallet, ChevronDown, Copy, Check } from 'lucide-react'
+import { formatEther } from 'viem'
 
 export function PortoAuth() {
   const { address, isConnected, chain, connector: activeConnector } = useAccount()
+  const { data: balance } = useBalance({
+    address: address,
+  })
   const { connect, isPending, error } = useConnect()
   const { disconnect, disconnectAsync } = useDisconnect()
   const connectors = useConnectors()
@@ -112,6 +116,16 @@ export function PortoAuth() {
             )}
           </div>
         </div>
+        {balance && (
+          <div className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+            <Wallet className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="hidden sm:inline">{parseFloat(formatEther(balance.value)).toFixed(4)}</span>
+              <span className="sm:hidden">{parseFloat(formatEther(balance.value)).toFixed(2)}</span>
+              <span className="ml-1">{balance.symbol}</span>
+            </span>
+          </div>
+        )}
         <Button
           onClick={async () => {
             try {

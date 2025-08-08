@@ -136,6 +136,8 @@ export function ClaimForm({ itemId, qrUrl }: ClaimFormProps) {
         abi: NostosContract.abi,
         functionName: 'submitClaim',
         args: [`0x${itemId}`, `0x${encryptedContact}`],
+        account: address!,
+        chain: chain!,
       })
     } catch (err) {
       console.error('Claim submission error:', err)

@@ -18,7 +18,7 @@ interface RevealContactModalProps {
 }
 
 export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: RevealContactModalProps) {
-  const { chain } = useAccount()
+  const { address, chain } = useAccount()
   const [rewardAmount, setRewardAmount] = useState('0.01')
   const [isRevealing, setIsRevealing] = useState(false)
   
@@ -52,6 +52,8 @@ export function RevealContactModal({ itemId, claimIndex, onClose, onSuccess }: R
         functionName: 'revealContactInfo',
         args: [itemId, BigInt(claimIndex)],
         value: value,
+        account: address!,
+        chain: chain!,
       })
     } catch (err) {
       console.error('Error revealing contact:', err)

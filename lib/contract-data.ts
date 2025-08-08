@@ -27,7 +27,7 @@ export interface UserStats {
 }
 
 export class NostosDataProvider {
-  private client: PublicClient
+  private client: any
   private contractAddress: Address
   private chainId: number
 

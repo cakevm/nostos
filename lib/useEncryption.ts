@@ -1,6 +1,6 @@
 "use client"
 
-import { useSignMessage } from 'wagmi'
+import { useSignMessage, useAccount } from 'wagmi'
 import { useState, useCallback } from 'react'
 import type { ItemData, ContactData } from './decryption'
 
@@ -10,6 +10,7 @@ import type { ItemData, ContactData } from './decryption'
  */
 export function useEncryption() {
   const { signMessageAsync } = useSignMessage()
+  const { address } = useAccount()
   const [isSigningForEncryption, setIsSigningForEncryption] = useState(false)
 
   /**
@@ -24,7 +25,10 @@ export function useEncryption() {
     try {
       setIsSigningForEncryption(true)
       // Use wagmi's signMessageAsync which handles both MetaMask and Porto properly
-      const signature = await signMessageAsync({ message })
+      const signature = await signMessageAsync({ 
+      account: address!,
+      message 
+    })
       
       // Use the signature as encryption key (deterministic)
       return signature.slice(2, 66) // Take first 64 hex chars (32 bytes)
@@ -160,7 +164,10 @@ export function useEncryption() {
     // For contact decryption, we need to derive the key that the finder used
     // This requires the owner to sign with finder's address in the message
     const message = `Nostos contact decryption key for ${itemId}`
-    const signature = await signMessageAsync({ message })
+    const signature = await signMessageAsync({ 
+      account: address!,
+      message 
+    })
     const key = signature.slice(2, 66)
     
     const encryptedBytes = new Uint8Array(

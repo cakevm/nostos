@@ -17,7 +17,6 @@ import { getContractAddress } from '@/lib/chains'
 
 interface ClaimWithDetails extends ClaimSubmittedEvent {
   status?: ClaimStatus
-  encryptedContact?: `0x${string}`
   contactInfo?: ContactData
 }
 
@@ -131,6 +130,8 @@ export function MyItems() {
         abi: NostosContract.abi,
         functionName: 'confirmReturn',
         args: [itemId, BigInt(claimIndex)],
+        account: address!,
+        chain: chain!,
       })
     } catch (error) {
       console.error('Error confirming return:', error)
@@ -485,7 +486,7 @@ export function MyItems() {
       <div className="grid gap-4">
         {items.map((item) => (
           <div
-            key={item.id}
+            key={item.itemId}
             className="bg-white dark:bg-stone-900 rounded-lg border border-slate-200 dark:border-stone-800 p-6 hover:shadow-md transition-shadow"
           >
             <div className="flex justify-between items-start mb-4">

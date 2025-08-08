@@ -26,7 +26,7 @@ export default function ItemDetailPage() {
     abi: NostosContract.abi,
     functionName: 'getItem',
     args: [`0x${itemId}`],
-  })
+  }) as { data: readonly [`0x${string}`, bigint, bigint, `0x${string}`, boolean] | undefined }
 
   // Read claims
   const { data: claims, refetch: refetchClaims } = useReadContract({
@@ -34,7 +34,7 @@ export default function ItemDetailPage() {
     abi: NostosContract.abi,
     functionName: 'getItemClaims',
     args: [`0x${itemId}`],
-  })
+  }) as { data: readonly [`0x${string}`, `0x${string}`, number, bigint][] | undefined; refetch: () => void }
 
   // Contract write hooks
   const { writeContract: approveClaim, data: approveHash } = useWriteContract()
@@ -49,6 +49,8 @@ export default function ItemDetailPage() {
       abi: NostosContract.abi,
       functionName: 'approveClaim',
       args: [`0x${itemId}`, BigInt(claimIndex)],
+      account: address!,
+      chain: chain!,
     })
     refetchClaims()
   }
@@ -60,6 +62,8 @@ export default function ItemDetailPage() {
       abi: NostosContract.abi,
       functionName: 'rejectClaim',
       args: [`0x${itemId}`, BigInt(claimIndex)],
+      account: address!,
+      chain: chain!,
     })
     refetchClaims()
   }
@@ -102,9 +106,9 @@ export default function ItemDetailPage() {
 
   const [owner, rewardAmount, registrationTime, encryptedDetails, isActive] = item
   const isOwner = address && address.toLowerCase() === owner.toLowerCase()
-  const pendingClaims = claims ? claims.filter((c: any) => c[2] === 0) : []
-  const approvedClaims = claims ? claims.filter((c: any) => c[2] === 1) : []
-  const rejectedClaims = claims ? claims.filter((c: any) => c[2] === 2) : []
+  const pendingClaims = claims ? claims.filter((c) => c[2] === 0) : []
+  const approvedClaims = claims ? claims.filter((c) => c[2] === 1) : []
+  const rejectedClaims = claims ? claims.filter((c) => c[2] === 2) : []
 
   return (
     <div className="min-h-screen bg-background">
@@ -200,13 +204,13 @@ export default function ItemDetailPage() {
                     Pending Claims ({pendingClaims.length})
                   </h3>
                   <div className="space-y-3">
-                    {pendingClaims.map((claim: any, index: number) => (
+                    {pendingClaims.map((claim, index: number) => (
                       <ClaimCard
                         key={index}
                         claim={claim}
-                        index={claims.indexOf(claim)}
-                        onApprove={() => handleApprove(claims.indexOf(claim))}
-                        onReject={() => handleReject(claims.indexOf(claim))}
+                        index={claims ? claims.indexOf(claim) : 0}
+                        onApprove={() => handleApprove(claims ? claims.indexOf(claim) : 0)}
+                        onReject={() => handleReject(claims ? claims.indexOf(claim) : 0)}
                         isApproving={isApproving}
                         isRejecting={isRejecting}
                         ownerPrivateKey={address} // This would need actual private key for decryption

@@ -112,6 +112,8 @@ export function ItemRegistration() {
         functionName: 'registerItem',
         args: [itemId, `0x${encryptedHex}`],
         value: REGISTRATION_FEE, // Total registration fee (platform fee + stake)
+        account: address!,
+        chain: chain!,
       })
       
       // Store QR data for after transaction success

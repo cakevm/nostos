@@ -36,17 +36,18 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Environment Information
+      - name: Build and Deploy to Vercel
         run: |
-          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }} || true
-          # Override the .vercel/.env.production.local if it exists
-          echo "NEXT_PUBLIC_PORTO_APP_ID=${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" > .vercel/.env.production.local
-
-      - name: Build Project Artifacts
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          # Create .vercel directory with project config
+          mkdir -p .vercel
+          echo '{
+            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}",
+            "orgId": "${{ secrets.VERCEL_ORG_ID }}"
+          }' > .vercel/project.json
+          
+          # Build and deploy using environment variable directly
+          NEXT_PUBLIC_PORTO_APP_ID="${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" \
+          npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
         
       - name: Comment on PR (if applicable)
         if: github.event_name == 'pull_request'
@@ -82,19 +83,19 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
-      - name: Pull Vercel Environment Information
-        run: |
-          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }} || true
-          # Override the .vercel/.env.preview.local if it exists
-          echo "NEXT_PUBLIC_PORTO_APP_ID=${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" > .vercel/.env.preview.local
-
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Deploy to Vercel
+      - name: Build and Deploy Preview to Vercel
         id: deploy
         run: |
-          DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          # Create .vercel directory with project config
+          mkdir -p .vercel
+          echo '{
+            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}",
+            "orgId": "${{ secrets.VERCEL_ORG_ID }}"
+          }' > .vercel/project.json
+          
+          # Build and deploy preview using environment variable directly
+          DEPLOYMENT_URL=$(NEXT_PUBLIC_PORTO_APP_ID="${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" \
+          npx vercel --token=${{ secrets.VERCEL_TOKEN }} --yes)
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
         
       - name: Comment PR with Preview URL

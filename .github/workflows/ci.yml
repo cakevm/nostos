@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Next.js app tests
+  nextjs:
+    name: Next.js Build & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_PORTO_APP_ID: ${{ secrets.NEXT_PUBLIC_PORTO_APP_ID || 'test-app-id' }}
+
+      - name: Check for build artifacts
+        run: |
+          if [ ! -d ".next" ]; then
+            echo "Build failed - .next directory not found"
+            exit 1
+          fi
+
+  # Smart contract tests
+  foundry:
+    name: Foundry Contract Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        working-directory: ./contracts
+        run: |
+          forge install foundry-rs/forge-std --no-commit
+          forge install OpenZeppelin/openzeppelin-contracts --no-commit
+
+      - name: Run contract tests
+        working-directory: ./contracts
+        run: forge test -vvv
+
+      - name: Check contract sizes
+        working-directory: ./contracts
+        run: forge build --sizes
+
+      - name: Run coverage
+        working-directory: ./contracts
+        run: forge coverage --report summary
+        continue-on-error: true
+
+  # Security checks
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Slither (Smart Contract Security)
+        uses: crytic/slither-action@v0.4.0
+        with:
+          target: 'contracts/'
+          slither-args: '--exclude-dependencies --exclude-informational'
+        continue-on-error: true
+
+      - name: Setup Node.js for audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  # Check for secrets
+  secrets-check:
+    name: Secrets Scanner
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified

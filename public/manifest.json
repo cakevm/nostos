@@ -1,0 +1,22 @@
+{
+  "name": "Nostos - Lost & Found",
+  "short_name": "Nostos",
+  "description": "The journey home for lost items - blockchain-powered lost and found",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#daa520",
+  "icons": [
+    {
+      "src": "/nostos-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

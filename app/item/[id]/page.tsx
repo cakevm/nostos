@@ -1,0 +1,368 @@
+"use client"
+
+import { useParams } from 'next/navigation'
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { PortoAuth } from '@/components/PortoAuth'
+import { NostosContract } from '@/lib/contracts'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { ArrowLeft, Package, User, Clock, CheckCircle, XCircle, Download, QrCode } from 'lucide-react'
+import { formatEther } from 'viem'
+import { useState, useRef, useEffect } from 'react'
+import QRCode from 'qrcode'
+import { decryptContactInfo } from '@/lib/encryption'
+import { formatDateTime } from '@/lib/format'
+
+export default function ItemDetailPage() {
+  const params = useParams()
+  const itemId = params.id as string
+  const { address, chain } = useAccount()
+  const [selectedClaim, setSelectedClaim] = useState<number | null>(null)
+  const qrRef = useRef<HTMLCanvasElement>(null)
+
+  // Read item data
+  const { data: item } = useReadContract({
+    address: chain ? NostosContract.getAddress(chain.id) : undefined,
+    abi: NostosContract.abi,
+    functionName: 'getItem',
+    args: [`0x${itemId}`],
+  })
+
+  // Read claims
+  const { data: claims, refetch: refetchClaims } = useReadContract({
+    address: chain ? NostosContract.getAddress(chain.id) : undefined,
+    abi: NostosContract.abi,
+    functionName: 'getItemClaims',
+    args: [`0x${itemId}`],
+  })
+
+  // Contract write hooks
+  const { writeContract: approveClaim, data: approveHash } = useWriteContract()
+  const { writeContract: rejectClaim, data: rejectHash } = useWriteContract()
+  const { isLoading: isApproving } = useWaitForTransactionReceipt({ hash: approveHash })
+  const { isLoading: isRejecting } = useWaitForTransactionReceipt({ hash: rejectHash })
+
+  const handleApprove = async (claimIndex: number) => {
+    if (!chain) return
+    await approveClaim({
+      address: NostosContract.getAddress(chain.id),
+      abi: NostosContract.abi,
+      functionName: 'approveClaim',
+      args: [`0x${itemId}`, BigInt(claimIndex)],
+    })
+    refetchClaims()
+  }
+
+  const handleReject = async (claimIndex: number) => {
+    if (!chain) return
+    await rejectClaim({
+      address: NostosContract.getAddress(chain.id),
+      abi: NostosContract.abi,
+      functionName: 'rejectClaim',
+      args: [`0x${itemId}`, BigInt(claimIndex)],
+    })
+    refetchClaims()
+  }
+
+  const generateQR = async () => {
+    if (!qrRef.current || typeof window === 'undefined') return
+    // Assuming the encryption key was stored or can be regenerated
+    const url = `${window.location.origin}/found/${itemId}?key=YOUR_ENCRYPTION_KEY`
+    await QRCode.toCanvas(qrRef.current, url, {
+      width: 200,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF',
+      },
+    })
+  }
+
+  if (!item) {
+    return (
+      <div className="min-h-screen bg-background">
+        <nav className="border-b">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <Link href="/">
+              <img src="/logo.svg" alt="Nostos" className="h-10" />
+            </Link>
+            <PortoAuth />
+          </div>
+        </nav>
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Item Not Found</h2>
+            <p className="text-muted-foreground">This item does not exist or has been removed</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  const [owner, rewardAmount, registrationTime, encryptedDetails, isActive] = item
+  const isOwner = address && address.toLowerCase() === owner.toLowerCase()
+  const pendingClaims = claims ? claims.filter((c: any) => c[2] === 0) : []
+  const approvedClaims = claims ? claims.filter((c: any) => c[2] === 1) : []
+  const rejectedClaims = claims ? claims.filter((c: any) => c[2] === 2) : []
+
+  return (
+    <div className="min-h-screen bg-background">
+      <nav className="border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link href="/">
+            <img src="/logo.svg" alt="Nostos" className="h-10" />
+          </Link>
+          <div className="flex items-center gap-4">
+            {isOwner && (
+              <Link href="/dashboard">
+                <Button variant="ghost">Dashboard</Button>
+              </Link>
+            )}
+            <PortoAuth />
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Link>
+
+        <div className="space-y-6">
+          {/* Item Details */}
+          <div className="bg-card p-6 rounded-lg border">
+            <div className="flex justify-between items-start mb-4">
+              <h1 className="text-2xl font-bold">Item Details</h1>
+              {isActive ? (
+                <span className="px-3 py-1 text-sm bg-green-500/10 text-green-600 rounded-full flex items-center gap-1">
+                  <CheckCircle className="h-4 w-4" />
+                  Active
+                </span>
+              ) : (
+                <span className="px-3 py-1 text-sm bg-red-500/10 text-red-600 rounded-full">
+                  Inactive
+                </span>
+              )}
+            </div>
+
+            <dl className="grid grid-cols-2 gap-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Item ID</dt>
+                <dd className="font-mono text-sm">{itemId}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Owner</dt>
+                <dd className="font-mono text-sm">
+                  {isOwner ? 'You' : `${owner.slice(0, 6)}...${owner.slice(-4)}`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Reward Amount</dt>
+                <dd className="font-semibold text-green-600">{formatEther(rewardAmount)} ETH</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Registered</dt>
+                <dd>{formatDateTime(registrationTime)}</dd>
+              </div>
+            </dl>
+
+            {isOwner && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="font-semibold mb-3">QR Code</h3>
+                <div className="flex items-center gap-4">
+                  <canvas ref={qrRef} className="border rounded" />
+                  <div className="space-y-2">
+                    <Button onClick={generateQR} variant="outline" size="sm">
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Regenerate QR
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Print this QR code and attach it to your item
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Claims Section */}
+          {isOwner && (
+            <div className="bg-card p-6 rounded-lg border">
+              <h2 className="text-xl font-bold mb-4">Claims</h2>
+              
+              {/* Pending Claims */}
+              {pendingClaims.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-orange-500" />
+                    Pending Claims ({pendingClaims.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {pendingClaims.map((claim: any, index: number) => (
+                      <ClaimCard
+                        key={index}
+                        claim={claim}
+                        index={claims.indexOf(claim)}
+                        onApprove={() => handleApprove(claims.indexOf(claim))}
+                        onReject={() => handleReject(claims.indexOf(claim))}
+                        isApproving={isApproving}
+                        isRejecting={isRejecting}
+                        ownerPrivateKey={address} // This would need actual private key for decryption
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Approved Claims */}
+              {approvedClaims.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Approved Claims ({approvedClaims.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {approvedClaims.map((claim: any, index: number) => (
+                      <div key={index} className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-mono">
+                              Finder: {claim[0].slice(0, 6)}...{claim[0].slice(-4)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Claimed: {formatDateTime(claim[1])}
+                            </p>
+                          </div>
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rejected Claims */}
+              {rejectedClaims.length > 0 && (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    Rejected Claims ({rejectedClaims.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {rejectedClaims.map((claim: any, index: number) => (
+                      <div key={index} className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-mono">
+                              Finder: {claim[0].slice(0, 6)}...{claim[0].slice(-4)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Claimed: {formatDateTime(claim[1])}
+                            </p>
+                          </div>
+                          <XCircle className="h-5 w-5 text-red-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {claims && claims.length === 0 && (
+                <p className="text-muted-foreground text-center py-8">
+                  No claims have been submitted for this item yet
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function ClaimCard({ 
+  claim, 
+  index, 
+  onApprove, 
+  onReject, 
+  isApproving, 
+  isRejecting,
+  ownerPrivateKey 
+}: any) {
+  const [decryptedContact, setDecryptedContact] = useState<string | null>(null)
+  const [isDecrypting, setIsDecrypting] = useState(false)
+
+  const handleDecrypt = () => {
+    setIsDecrypting(true)
+    try {
+      // In production, this would use the actual owner's private key
+      // For now, we'll show the encrypted data
+      const contactHex = claim[3] as string
+      // const decrypted = decryptContactInfo(contactHex.slice(2), ownerPrivateKey)
+      // setDecryptedContact(decrypted)
+      setDecryptedContact("Contact info would be decrypted here with owner's private key")
+    } catch (error) {
+      console.error('Failed to decrypt contact info:', error)
+      setDecryptedContact("Failed to decrypt contact information")
+    } finally {
+      setIsDecrypting(false)
+    }
+  }
+
+  return (
+    <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-900">
+      <div className="space-y-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-sm font-mono">
+              Finder: {claim[0].slice(0, 6)}...{claim[0].slice(-4)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Submitted: {formatDateTime(claim[1])}
+            </p>
+          </div>
+        </div>
+
+        {!decryptedContact ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDecrypt}
+            disabled={isDecrypting}
+            className="w-full"
+          >
+            {isDecrypting ? 'Decrypting...' : 'View Contact Information'}
+          </Button>
+        ) : (
+          <div className="p-3 bg-background rounded border">
+            <p className="text-sm font-semibold mb-1">Contact Information:</p>
+            <p className="text-sm whitespace-pre-wrap">{decryptedContact}</p>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={onApprove}
+            disabled={isApproving || isRejecting}
+            className="flex-1"
+          >
+            {isApproving ? 'Approving...' : 'Approve & Pay Reward'}
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={onReject}
+            disabled={isApproving || isRejecting}
+            className="flex-1"
+          >
+            {isRejecting ? 'Rejecting...' : 'Reject Claim'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,58 @@
+# Configuration for GitHub labeler action
+# Add labels to PRs based on files changed
+
+frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'app/**'
+      - 'components/**'
+      - 'public/**'
+      - '*.tsx'
+      - '*.css'
+
+contracts:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'contracts/**'
+      - '*.sol'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.md'
+      - 'docs/**'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'contracts/foundry.toml'
+
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '*.config.*'
+      - 'tsconfig.json'
+      - '.env.example'
+      - 'vercel.json'
+
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.test.*'
+      - '**/*.spec.*'
+      - 'contracts/test/**'
+
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'lib/encryption.ts'
+      - 'lib/decryption.ts'
+      - 'lib/porto-config.ts'
+      - 'contracts/src/Nostos.sol'

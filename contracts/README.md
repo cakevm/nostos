@@ -26,8 +26,8 @@ The main contract that handles:
 ./install-deps.sh
 
 # Or manually:
-forge install foundry-rs/forge-std --no-commit
-forge install OpenZeppelin/openzeppelin-contracts --no-commit
+forge install foundry-rs/forge-std --no-git
+forge install OpenZeppelin/openzeppelin-contracts --no-git
 ```
 
 ### Environment Variables

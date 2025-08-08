@@ -18,19 +18,19 @@ export function BoatAnimation() {
       <style jsx>{`
         @keyframes sail {
           0% {
-            transform: translateX(-20%) translateY(0) rotate(-2deg);
+            transform: translateX(-150px) translateY(0) rotate(-2deg);
           }
           25% {
-            transform: translateX(25%) translateY(-8px) rotate(1deg);
+            transform: translateX(calc(25vw + 50px)) translateY(-8px) rotate(1deg);
           }
           50% {
-            transform: translateX(70%) translateY(0) rotate(-1deg);
+            transform: translateX(calc(50vw + 50px)) translateY(0) rotate(-1deg);
           }
           75% {
-            transform: translateX(115%) translateY(-5px) rotate(2deg);
+            transform: translateX(calc(75vw + 50px)) translateY(-5px) rotate(2deg);
           }
           100% {
-            transform: translateX(160%) translateY(0) rotate(-2deg);
+            transform: translateX(calc(100vw + 150px)) translateY(0) rotate(-2deg);
           }
         }
         

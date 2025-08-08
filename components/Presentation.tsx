@@ -48,7 +48,7 @@ export function Presentation({ onClose }: PresentationProps) {
       
       {/* Floating ship animation from homepage */}
       <div className="absolute top-10 right-10 animate-float">
-        <svg width="120" height="120" viewBox="0 0 200 200" className="text-amber-500/30">
+        <svg width="120" height="120" viewBox="0 0 200 200" className="text-amber-600 dark:text-amber-500 opacity-30">
           <path d="M100 40 L140 100 L100 120 L60 100 Z" fill="currentColor" />
           <path d="M100 120 L100 160 L80 140 L100 120" fill="currentColor" opacity="0.7" />
           <path d="M100 120 L120 140 L100 160 L100 120" fill="currentColor" opacity="0.5" />
@@ -86,10 +86,10 @@ export function Presentation({ onClose }: PresentationProps) {
       <div className="grid grid-cols-3 gap-12 max-w-4xl">
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
           <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-            <svg width="80" height="80" viewBox="0 0 100 100" className="text-red-500">
+            <svg width="80" height="80" viewBox="0 0 100 100" className="text-red-600 dark:text-red-500">
               <circle cx="50" cy="30" r="15" fill="none" stroke="currentColor" strokeWidth="3" />
               <path d="M35 45 L65 45 L65 70 Q50 85 35 70 Z" fill="none" stroke="currentColor" strokeWidth="3" />
-              <text x="50" y="95" textAnchor="middle" className="text-3xl font-bold">?</text>
+              <text x="50" y="95" textAnchor="middle" className="text-3xl font-bold" fill="currentColor">?</text>
             </svg>
           </div>
           <h3 className="text-xl font-semibold mb-2">14M Items Lost Yearly</h3>
@@ -98,7 +98,7 @@ export function Presentation({ onClose }: PresentationProps) {
 
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
           <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <svg width="80" height="80" viewBox="0 0 100 100" className="text-orange-500">
+            <svg width="80" height="80" viewBox="0 0 100 100" className="text-orange-600 dark:text-orange-500">
               <rect x="20" y="40" width="60" height="40" fill="none" stroke="currentColor" strokeWidth="3" />
               <path d="M40 40 L40 30 Q50 20 60 30 L60 40" fill="none" stroke="currentColor" strokeWidth="3" />
               <line x1="35" y1="60" x2="65" y2="60" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
@@ -110,7 +110,7 @@ export function Presentation({ onClose }: PresentationProps) {
 
         <div className="text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
           <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-            <svg width="80" height="80" viewBox="0 0 100 100" className="text-purple-500">
+            <svg width="80" height="80" viewBox="0 0 100 100" className="text-purple-600 dark:text-purple-500">
               <circle cx="30" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="3" />
               <circle cx="70" cy="50" r="20" fill="none" stroke="currentColor" strokeWidth="3" />
               <line x1="45" y1="50" x2="55" y2="50" stroke="currentColor" strokeWidth="3" strokeDasharray="2 2" />
@@ -288,11 +288,11 @@ export function Presentation({ onClose }: PresentationProps) {
 
         <div className="text-center animate-scale-in" style={{ animationDelay: '0.3s' }}>
           <div className="w-24 h-24 bg-purple-100 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg width="48" height="48" viewBox="0 0 100 100" className="text-purple-600 dark:text-purple-400">
+            <svg width="48" height="48" viewBox="0 0 100 100" className="text-purple-700 dark:text-purple-400">
               <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="3" />
-              <path d="M50 30 L65 45 L50 55 L35 45 Z" fill="currentColor" opacity="0.3" />
-              <path d="M50 45 L65 60 L50 70 L35 60 Z" fill="currentColor" opacity="0.5" />
-              <path d="M50 60 L65 75 L50 85 L35 75 Z" fill="currentColor" opacity="0.7" />
+              <path d="M50 30 L65 45 L50 55 L35 45 Z" fill="currentColor" opacity="0.4" />
+              <path d="M50 45 L65 60 L50 70 L35 60 Z" fill="currentColor" opacity="0.6" />
+              <path d="M50 60 L65 75 L50 85 L35 75 Z" fill="currentColor" opacity="0.8" />
             </svg>
           </div>
           <h3 className="text-xl font-semibold mb-2">Smart Contracts</h3>
@@ -343,7 +343,7 @@ export function Presentation({ onClose }: PresentationProps) {
         <div className="space-y-6">
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-800/30">
             <h3 className="text-2xl font-bold mb-4 text-indigo-700 dark:text-indigo-300 flex items-center">
-              <svg width="32" height="32" viewBox="0 0 100 100" className="mr-3">
+              <svg width="32" height="32" viewBox="0 0 100 100" className="mr-3 text-indigo-700 dark:text-indigo-300">
                 <path d="M50 10 L80 30 L80 70 L50 90 L20 70 L20 30 Z" fill="none" stroke="currentColor" strokeWidth="3" />
                 <circle cx="50" cy="30" r="5" fill="currentColor" />
                 <circle cx="30" cy="50" r="5" fill="currentColor" />
@@ -381,7 +381,7 @@ export function Presentation({ onClose }: PresentationProps) {
         <div className="space-y-6">
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 rounded-2xl p-8 border border-amber-200 dark:border-amber-800/30">
             <h3 className="text-2xl font-bold mb-4 text-amber-700 dark:text-amber-300 flex items-center">
-              <svg width="32" height="32" viewBox="0 0 100 100" className="mr-3">
+              <svg width="32" height="32" viewBox="0 0 100 100" className="mr-3 text-amber-700 dark:text-amber-300">
                 <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="3" />
                 <path d="M50 25 L50 75" stroke="currentColor" strokeWidth="3" />
                 <path d="M25 50 L75 50" stroke="currentColor" strokeWidth="3" />

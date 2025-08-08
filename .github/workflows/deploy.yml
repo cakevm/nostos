@@ -30,8 +30,6 @@ jobs:
 
       - name: Build application
         run: npm run build
-        env:
-          NEXT_PUBLIC_PORTO_APP_ID: ${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
@@ -45,8 +43,7 @@ jobs:
             "orgId": "${{ secrets.VERCEL_ORG_ID }}"
           }' > .vercel/project.json
           
-          # Build and deploy using environment variable directly
-          NEXT_PUBLIC_PORTO_APP_ID="${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" \
+          # Build and deploy
           npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
         
       - name: Comment on PR (if applicable)
@@ -93,9 +90,8 @@ jobs:
             "orgId": "${{ secrets.VERCEL_ORG_ID }}"
           }' > .vercel/project.json
           
-          # Build and deploy preview using environment variable directly
-          DEPLOYMENT_URL=$(NEXT_PUBLIC_PORTO_APP_ID="${{ secrets.NEXT_PUBLIC_PORTO_APP_ID }}" \
-          npx vercel --token=${{ secrets.VERCEL_TOKEN }} --yes)
+          # Build and deploy preview
+          DEPLOYMENT_URL=$(npx vercel --token=${{ secrets.VERCEL_TOKEN }} --yes)
           echo "deployment-url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
         
       - name: Comment PR with Preview URL

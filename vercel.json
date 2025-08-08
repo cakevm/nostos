@@ -1,8 +1,3 @@
 {
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_PORTO_APP_ID": "@porto_app_id",
-    "PORTO_MERCHANT_ADDRESS": "@porto_merchant_address",
-    "PORTO_MERCHANT_PRIVATE_KEY": "@porto_merchant_private_key"
-  }
+  "framework": "nextjs"
 }

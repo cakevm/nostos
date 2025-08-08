@@ -18,7 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
-    "lucide-react": "^0.537.0",
+    "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "porto": "^0.0.63",
     "qrcode": "^1.5.4",

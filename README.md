@@ -1,5 +1,7 @@
 # Nostos - The Journey Home for Lost Items
 
+🌐 **Live Demo**: [nostos-six.vercel.app](https://nostos-six.vercel.app)
+
 A blockchain-powered lost and found platform that helps reunite people with their belongings through secure QR codes and smart contracts.
 
 > ⚠️ **WARNING: UNAUDITED CONTRACTS**  

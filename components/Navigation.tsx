@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PortoAuth } from '@/components/PortoAuth'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { Search, Package, HelpCircle } from 'lucide-react'
-import { useAccount } from 'wagmi'
+import { Search, Package, HelpCircle, Wallet } from 'lucide-react'
+import { useAccount, useBalance } from 'wagmi'
 import { useState, useEffect } from 'react'
+import { formatEther } from 'viem'
 
 interface NavigationProps {
   showRegisterButton?: boolean
@@ -14,7 +15,10 @@ interface NavigationProps {
 }
 
 export function Navigation({ showRegisterButton = false, showDashboardButton = false }: NavigationProps) {
-  const { address } = useAccount()
+  const { address, chain } = useAccount()
+  const { data: balance } = useBalance({
+    address: address,
+  })
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -36,12 +40,29 @@ export function Navigation({ showRegisterButton = false, showDashboardButton = f
             </Button>
           </Link>
           {mounted && address && (
-            <Link href="/dashboard">
-              <Button variant="ghost" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                <span className="hidden sm:inline">Your Items</span>
-              </Button>
-            </Link>
+            <>
+              {balance && (
+                <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                  <Wallet className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span className="hidden sm:inline">{parseFloat(formatEther(balance.value)).toFixed(4)}</span>
+                    <span className="sm:hidden">{parseFloat(formatEther(balance.value)).toFixed(2)}</span>
+                    <span className="ml-1">{balance.symbol}</span>
+                  </span>
+                  {chain && (
+                    <span className="hidden lg:inline text-xs text-slate-500 dark:text-slate-400 ml-1">
+                      ({chain.name})
+                    </span>
+                  )}
+                </div>
+              )}
+              <Link href="/dashboard">
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden sm:inline">Your Items</span>
+                </Button>
+              </Link>
+            </>
           )}
           {showRegisterButton && (
             <Link href="/register">
